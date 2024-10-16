@@ -1,8 +1,14 @@
 from trajv3 import fragment
-from trajv3.model import FragmentInput, Animation
+from trajv3.model import FragmentInput, Animation, Stage, Environment
 
 
-def get(key_frames, positions):
+def to_key_frames(key_points, frame_rate):
+    return [int(p * frame_rate) for p in key_points]
+
+
+def get(key_points, positions, stage: Stage, env: Environment):
+    frame_rate = env.frame_rate
+    key_frames = to_key_frames(key_points, frame_rate)
     next_result = None
     obj2animation = {}
     items = []
@@ -18,7 +24,7 @@ def get(key_frames, positions):
             velocity = next_result.velocity
         end_position = positions[i]
         frag = fragment.get_fragment(
-            FragmentInput(start_frame, end_frame, start_position, end_position, velocity))
+            FragmentInput(start_frame, end_frame, start_position, end_position, velocity), env)
         next_result = frag.apply()
         if next_result is not None:
             if next_result.items is not None:

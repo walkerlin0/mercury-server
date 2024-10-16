@@ -23,9 +23,14 @@ def layout_req():
     return resp(layout(rhythm_times, bpm, frame_rate, vx, vy))
 
 
-@app.route('/trajectory', methods=['post'])
+@app.route('/trajectory', methods=['POST'])
 def trajectory():
-    print(request.json)
+    data = request.json
+    bpm = data.get('bpm')
+    vx = data.get('vx')
+    vy = data.get('vy')
+    frame_rate = data.get('frame_rate')
+    rhythm_times = data.get('rhythm_times')
     return {'positions': [(1, 2, 3)]}
 
 
