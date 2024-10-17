@@ -93,7 +93,7 @@ class ThrowFragment(Fragment):
         elif pre_velocity[0] < 0 < start_velocity[0]:
             if d > 0:
                 d -= 180
-        if self.inp.bump:
+        if self.inp.bump and self.inp.start_frame > 0:
             pos = self.inp.start_position
             radius = stage.get_ball_radius()
             loc = Math.find_perpendicular_point(pos, radius, d)
@@ -114,9 +114,9 @@ class ThrowFragment(Fragment):
 
             prop_name = 'luminous'
             # obj_pad[prop_name] = 0
-            obj_pad.keyframe_insert(data_path=f'["{prop_name}"]', frame=self.inp.start_frame - 1, value=0)
+            obj_pad.keyframe_insert(data_path=f'{prop_name}', frame=self.inp.start_frame - 1, value=0)
             # obj_pad[prop_name] = stage.luminous
-            obj_pad.keyframe_insert(data_path=f'["{prop_name}"]', frame=self.inp.start_frame + 4, value=stage.luminous)
+            obj_pad.keyframe_insert(data_path=f'{prop_name}', frame=self.inp.start_frame + 4, value=stage.luminous)
         return FragmentOutput(ball_location, cur_velocity)
 
 

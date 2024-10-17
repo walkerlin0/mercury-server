@@ -1,3 +1,5 @@
+import time
+
 import requests
 
 
@@ -116,6 +118,7 @@ def get_traj():
                  [32.00000000000001, 0, -488.3333333333328], [28.400000000000006, 0, -491.3333333333328],
                  [32.400000000000006, 0, -494.6666666666661]]
     url_traj = 'http://127.0.0.1:5000/trajectory'
+    start = time.time()
     resp = requests.post(url_traj, json={
         'frame_rate': 30,
         'g': -10,
@@ -149,7 +152,8 @@ def get_traj():
                          74.34760800000001, 74.673694, 74.99978, 75.325866]
     })
     print(resp.status_code)
-    print(resp.json())
+    print(resp.text)
+    print('use time:',time.time()-start)
 
 
 if __name__ == '__main__':

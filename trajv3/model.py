@@ -69,6 +69,18 @@ class FragmentOutput(object):
         self.copy_items = []
 
 
+def round4(v):
+    if v is None:
+        return None
+    if isinstance(v, float):
+        return round(v, 4)
+    if isinstance(v, list):
+        return [round4(i) for i in v]
+    if isinstance(v, tuple):
+        return tuple(round4(i) for i in v)
+    return v
+
+
 class BlenderObject():
     def __init__(self, typ=None, copy_from=None, location=None, rotation_euler=None):
         super().__init__()
@@ -94,12 +106,17 @@ class BlenderObject():
         return self.data_path2frame2value
 
     def to_dict(self):
+        rounded_animation = {}
+        for k, frame2value in self.data_path2frame2value.items():
+            rounded_animation[k] = {}
+            for frame, value in frame2value.items():
+                rounded_animation[k][frame] = round4(value)
         return {
             'typ': self.typ,
-            'location': self.location,
-            'rotation_euler': self.rotation_euler,
+            'location': round4(self.location),
+            'rotation_euler': round4(self.rotation_euler),
             'copy_from': None if self.copy_from is None else self.copy_from.to_dict(),
-            'data_path2frame2value': self.data_path2frame2value
+            'data_path2frame2value': rounded_animation
         }
 
 
