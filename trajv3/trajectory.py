@@ -1,12 +1,14 @@
 from trajv3 import fragment
-from trajv3.model import FragmentInput, Animation, Stage, Environment
+from trajv3.model import FragmentInput, Animation, Stage, Environment, Ball, Support, Pad
 
 
 def to_key_frames(key_points, frame_rate):
     return [int(p * frame_rate) for p in key_points]
 
 
-def get(key_points, positions, stage: Stage, env: Environment):
+def get(key_points, positions, frame_rate, g, ball_radius, luminous, pad_loc, support_loc):
+    stage = Stage(Ball(), Support(location=support_loc), Pad(location=pad_loc), ball_radius, luminous)
+    env = Environment(g, frame_rate)
     frame_rate = env.frame_rate
     key_frames = to_key_frames(key_points, frame_rate)
     next_result = None
@@ -25,7 +27,7 @@ def get(key_points, positions, stage: Stage, env: Environment):
         end_position = positions[i]
         frag = fragment.get_fragment(
             FragmentInput(start_frame, end_frame, start_position, end_position, velocity), env)
-        next_result = frag.apply()
+        next_result = frag.apply(stage)
         if next_result is not None:
             if next_result.items is not None:
                 items.extend(next_result.items)
@@ -36,8 +38,4 @@ def get(key_points, positions, stage: Stage, env: Environment):
                     rani = obj2animation.get(ani.obj_name, Animation(ani.obj_name))
                     rani.update(ani)
                     obj2animation[ani.obj_name] = rani
-    return {
-        'items': items,
-        'copy_items': copy_items,
-        'animations': list(obj2animation.values())
-    }
+    return stage.items

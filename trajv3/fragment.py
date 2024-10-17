@@ -106,17 +106,17 @@ class ThrowFragment(Fragment):
             stage.copy_obj(stage.support, location=loc_support,
                            rotation_euler=(math.radians(-90 - d), 0, math.radians(90)))
             # set pad jump animation
-            obj_pad.keyframe_insert(data_path="location", frame=self.inp.start_frame - 1)
-            obj_pad.location = loc_jump
-            obj_pad.keyframe_insert(data_path="location", frame=self.inp.start_frame + 4)
-            obj_pad.location = loc
-            obj_pad.keyframe_insert(data_path="location", frame=self.inp.start_frame + 9)
+            obj_pad.keyframe_insert(data_path="location", frame=self.inp.start_frame - 1, value=loc)
+            # obj_pad.location = loc_jump
+            obj_pad.keyframe_insert(data_path="location", frame=self.inp.start_frame + 4, value=loc_jump)
+            # obj_pad.location = loc
+            obj_pad.keyframe_insert(data_path="location", frame=self.inp.start_frame + 9, value=loc)
 
             prop_name = 'luminous'
-            obj_pad[prop_name] = 0
-            obj_pad.keyframe_insert(data_path=f'["{prop_name}"]', frame=self.inp.start_frame - 1)
-            obj_pad[prop_name] = stage.luminous
-            obj_pad.keyframe_insert(data_path=f'["{prop_name}"]', frame=self.inp.start_frame + 4)
+            # obj_pad[prop_name] = 0
+            obj_pad.keyframe_insert(data_path=f'["{prop_name}"]', frame=self.inp.start_frame - 1, value=0)
+            # obj_pad[prop_name] = stage.luminous
+            obj_pad.keyframe_insert(data_path=f'["{prop_name}"]', frame=self.inp.start_frame + 4, value=stage.luminous)
         return FragmentOutput(ball_location, cur_velocity)
 
 
@@ -126,7 +126,7 @@ class JumpGoStraightFragment(Fragment):
         height = self.inp.height()
         self.throw_dt_1 = math.ceil(math.sqrt(height / 0.5 / -self.env.G) * self.env.frame_rate) / self.env.frame_rate
         self.throw_dt_2 = math.ceil(math.sqrt(height / -self.env.G) * self.env.frame_rate) / self.env.frame_rate
-        self.mid_dt = self.inp.duration() - self.throw_dt_1 - self.throw_dt_2
+        self.mid_dt = self.inp.duration(env.frame_rate) - self.throw_dt_1 - self.throw_dt_2
 
     def is_suitable(self):
         height = self.inp.height()
@@ -135,11 +135,11 @@ class JumpGoStraightFragment(Fragment):
             return False
         min_time = self.throw_dt_1 + self.throw_dt_2
         # 确保比水平抛物时间多一帧以上，否则不如直接采用抛物运动
-        time_request = self.inp.duration() > min_time + 0.04
+        time_request = self.inp.duration(self.env.frame_rate) > min_time + 0.04
         return time_request
 
     def apply(self, stage):
-        dt = self.inp.duration()
+        dt = self.inp.duration(self.env.frame_rate)
         height = self.inp.height()
         mid_start_frame = self.inp.start_frame + round(self.throw_dt_1 * self.env.frame_rate)
         mid_end_frame = self.inp.end_frame - round(self.throw_dt_2 * self.env.frame_rate)
@@ -170,7 +170,7 @@ class JumpGoRoundFragment(Fragment):
         height = self.inp.height()
         self.throw_dt_1 = math.ceil(math.sqrt(height / 0.5 / -self.env.G) * self.env.frame_rate) / self.env.frame_rate
         self.throw_dt_2 = math.ceil(math.sqrt(height / -self.env.G) * self.env.frame_rate) / self.env.frame_rate
-        self.mid_dt = self.inp.duration() - self.throw_dt_1 - self.throw_dt_2
+        self.mid_dt = self.inp.duration(self.env.frame_rate) - self.throw_dt_1 - self.throw_dt_2
 
     def is_suitable(self):
         height = self.inp.height()
@@ -179,7 +179,7 @@ class JumpGoRoundFragment(Fragment):
             return False
         min_time = self.throw_dt_1 + self.throw_dt_2
         # 确保比水平抛物时间多一帧以上，否则不如直接采用抛物运动
-        time_request = self.inp.duration() > min_time + 0.04
+        time_request = self.inp.duration(self.env.frame_rate) > min_time + 0.04
 
         max_vx = self.inp.max_vx()
         max_mid_len = abs(max_vx * self.mid_dt)
@@ -190,7 +190,7 @@ class JumpGoRoundFragment(Fragment):
         return time_request and distance_request
 
     def apply(self, stage: Stage) -> FragmentOutput:
-        dt = self.inp.duration()
+        dt = self.inp.duration(self.env.frame_rate)
         height = self.inp.height()
         mid_start_frame = self.inp.start_frame + round(self.throw_dt_1 * self.env.frame_rate)
         mid_end_frame = self.inp.end_frame - round(self.throw_dt_2 * self.env.frame_rate)
@@ -244,7 +244,8 @@ class JumpGoRoundFragment(Fragment):
         frame = int(mid_top_l / mid_l * self.mid_dt * self.env.frame_rate)
         # print(cur_start_frame, frame)
         tmp_result = StraightMovingFragment(
-            FragmentInput(cur_start_frame, cur_start_frame + frame, start_pos, end_pos, tmp_result.velocity)).apply(
+            FragmentInput(cur_start_frame, cur_start_frame + frame, start_pos, end_pos, tmp_result.velocity),
+            self.env).apply(
             stage)
 
         start_pos = tmp_result.position
@@ -359,7 +360,7 @@ class CircleMovingFragment(Fragment):
             # stage.ball.location = (x, y, z)
             ball_location = (x, y, z)
             frame = int(abs(angle - start_angle) / angle_v) + self.inp.start_frame + 1
-            stage.ball.keyframe_insert(data_path="location",value=ball_location, frame=frame)
+            stage.ball.keyframe_insert(data_path="location", value=ball_location, frame=frame)
             inner_point = (self.center[0] + (self.radius - dist_horz) * math.cos(rad),
                            self.center[1] + (self.radius - dist_horz) * math.sin(rad), z - dist_vert)
             outer_point = (self.center[0] + (self.radius + dist_horz) * math.cos(rad),
@@ -368,9 +369,8 @@ class CircleMovingFragment(Fragment):
             track_inner_points.append(inner_point)
             track_outer_points.append(outer_point)
             if angle % 30 == 0:
-                stage.new_hollow_tube([inner_point, bottom_point, outer_point], stage.track_depth,
-                                      f'{stage.track_name}_bar')
-        stage.new_hollow_tube(track_inner_points, stage.track_depth, f'{stage.track_name}_inner')
-        stage.new_hollow_tube(track_outer_points, stage.track_depth, f'{stage.track_name}_outer')
+                stage.new_hollow_tube([inner_point, bottom_point, outer_point], stage.track_depth)
+        stage.new_hollow_tube(track_inner_points, stage.track_depth)
+        stage.new_hollow_tube(track_outer_points, stage.track_depth)
 
         return FragmentOutput(self.inp.end_position, (vx, vy, 0))

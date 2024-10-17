@@ -1,11 +1,7 @@
 import math
+from typing import List
 
 from helper import Math
-
-try:
-    import config
-except:
-    from .. import config
 
 
 class FragmentInput(object):
@@ -41,8 +37,8 @@ class FragmentInput(object):
     def direction_y(self):
         return 1 if self.start_position[1] < self.end_position[1] else -1
 
-    def duration(self):
-        return (self.end_frame - self.start_frame) / config.FRAME_RATE
+    def duration(self, frame_rate):
+        return (self.end_frame - self.start_frame) / frame_rate
 
     def max_vx(self):
         return math.sqrt(
@@ -73,7 +69,7 @@ class FragmentOutput(object):
         self.copy_items = []
 
 
-class BlenderObject(dict):
+class BlenderObject():
     def __init__(self, typ=None, copy_from=None, location=None, rotation_euler=None):
         super().__init__()
         self.typ = typ
@@ -86,14 +82,25 @@ class BlenderObject(dict):
         self.copy_from = copy_from
         self.data_path2frame2value = {}
 
-    def keyframe_insert(self, data_path, value, frame):
+    def keyframe_insert(self, data_path, frame, value):
         # value = self.get(data_path, None)
         # if not value:
         #     raise 'data_path not exist'
-        self.data_path2frame2value[data_path][frame] = value
+        dp = self.data_path2frame2value.get(data_path, {})
+        self.data_path2frame2value[data_path] = dp
+        dp[frame] = value
 
     def get_animation(self):
         return self.data_path2frame2value
+
+    def to_dict(self):
+        return {
+            'typ': self.typ,
+            'location': self.location,
+            'rotation_euler': self.rotation_euler,
+            'copy_from': None if self.copy_from is None else self.copy_from.to_dict(),
+            'data_path2frame2value': self.data_path2frame2value
+        }
 
 
 class Ball(BlenderObject):
@@ -107,11 +114,36 @@ class Tube(BlenderObject):
         self.points = points
         self.depth = depth
 
+    def to_dict(self):
+        d = super().to_dict()
+        d.update({
+            'points': self.points,
+            'depth': self.depth
+        })
+        return d
+
+
+class Support(BlenderObject):
+    def __init__(self, copy_from=None, location=None, rotation_euler=None):
+        super().__init__('support', copy_from, location, rotation_euler)
+
+
+class Pad(BlenderObject):
+    def __init__(self, copy_from=None, location=None, rotation_euler=None):
+        super().__init__('pad', copy_from, location, rotation_euler)
+
 
 class TrackSupport(BlenderObject):
     def __init__(self, copy_from=None, location=None, rotation_euler=None, depth=None):
         super().__init__('track_support', copy_from, location, rotation_euler)
         self.depth = depth
+
+    def to_dict(self):
+        d = super().to_dict()
+        d.update({
+            'depth': self.depth
+        })
+        return d
 
 
 class Stage(object):
@@ -123,11 +155,15 @@ class Stage(object):
         self.ball_radius = ball_radius
         self.luminous = luminous
 
+        self.items: List[BlenderObject] = [ball]
+
     def get_ball_radius(self):
         return self.ball_radius
 
     def copy_obj(self, obj, location, rotation_euler):
-        return BlenderObject(copy_from=obj, location=location, rotation_euler=rotation_euler)
+        obj = BlenderObject(copy_from=obj, location=location, rotation_euler=rotation_euler)
+        self.items.append(obj)
+        return obj
 
     def new_straight_thin_track(self, start_pos, end_pos, depth, need_support):
         min_len = 2
@@ -156,10 +192,14 @@ class Stage(object):
                 self.add_track_support(inner_pos, depth)
 
     def new_hollow_tube(self, points, depth):
-        return Tube(points, depth)
+        tube = Tube(points=points, depth=depth)
+        self.items.append(tube)
+        return tube
 
     def add_track_support(self, location, depth):
-        return TrackSupport(location=location, depth=depth)
+        s = TrackSupport(location=location, depth=depth)
+        self.items.append(s)
+        return s
 
 
 class Environment(object):
